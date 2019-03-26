@@ -7,26 +7,28 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-dims=$(identify -format "%wx%h" RB250_SM.png)
+
+in_file="${1:?Must specify the input image file as argument 1.}"
+mask_file="${2:?Must specify the mask file as argument 2.}"
+out_file="${3:? Must specify the output filename as argument 3.}"
+border_size=1
+dpi=100
+dims=$(identify -format "%wx%h" "${mask_file}")
+
 convert \( \
-    \( legging_sm.jpg -resize ${dims}^  -compose Copy \
+    \( "${in_file}" -resize ${dims}^  -compose Copy \
         -gravity center -extent ${dims} -quality 100 \) \
-    RB250_SM.png \
+    "${mask_file}" \
     -compose DstIn -alpha Set -composite  \
-\) \
-\( \
-    \( \( RB250_SM.png \
-        -background black -flatten \
-        \) \
-	    -alpha off \
+\) \( \
+    \( "${mask_file}" -background black -compose over -flatten -alpha off \
 		-channel A -morphology EdgeIn Diamond +channel \
-		+level-colors white,black \
-    \)\
-    -morphology erode:1 Diamond \
-	-alpha Set -background none -transparent white \
+		+level-colors white,black \)\
+    -morphology erode:$border_size Diamond \
+	-alpha Set -background none -transparent white  \
 \) \
 -compose DstOver -composite -units pixelsperinch -density 100 \
-result.png
+"${out_file}"
 
 
 
